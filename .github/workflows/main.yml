@@ -1,5 +1,6 @@
-name: Build APK
+name: Build Vikas Ultra Max
 on: [push]
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -8,21 +9,34 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.10.0'
-      - run: |
+
+      - name: Master Build
+        run: |
+          # 1. पुरानी फाइलों का बैकअप
           mkdir -p b
           cp -r lib/* b/
           cp android/app/google-services.json . 
+          
+          # 2. नया ढांचा बनाना (y के साथ)
           flutter create . --overwrite --org com.vikas.pasoriya
-          # ऐप का असली नाम यहाँ सेट होगा
+          
+          # 3. नाम और SDK की सेटिंग (यही एरर ठीक करेगा)
           sed -i 's/android:label=".*"/android:label="Vikas Pasoriya Official"/g' android/app/src/main/AndroidManifest.xml
+          sed -i 's/minSdkVersion 19/minSdkVersion 21/g' android/app/build.gradle
+          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle
+          
+          # 4. कोडिंग वापस डालना
           rm -rf lib/
           mv b lib/
           mv google-services.json android/app/
-          sed -i 's/minSdkVersion 19/minSdkVersion 21/g' android/app/build.gradle
+          
+          # 5. पैकेज जोड़ना और फाइनल तैयारी
           flutter pub add cloud_firestore firebase_core url_launcher
           flutter pub get
           flutter build apk --release
-      - uses: actions/upload-artifact@v4
+
+      - name: Final Result
+        uses: actions/upload-artifact@v4
         with:
           name: Vikas_Ultra_Max
           path: build/app/outputs/flutter-apk/app-release.apk
