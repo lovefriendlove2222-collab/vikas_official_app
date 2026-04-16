@@ -12,31 +12,23 @@ jobs:
 
       - name: Master Build
         run: |
-          # 1. पुरानी फाइलों का बैकअप
-          mkdir -p b
-          cp -r lib/* b/
-          cp android/app/google-services.json . 
+          # 1. जरूरी फोल्डर बनाना
+          mkdir -p android/app
           
-          # 2. नया प्रोजेक्ट बनाना
+          # 2. खुद से एक चाबी (Keystore) बनाना ताकि एरर न आए
+          keytool -genkey -v -keystore android/app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Vikas, OU=Dev, O=Vikas, L=Sonipat, S=Haryana, C=IN"
+          
+          # 3. अब इस चाबी की SHA-1 स्क्रीन पर दिखाना
+          echo "------ आपकी SHA-1 चाबी यहाँ है ------"
+          keytool -list -v -keystore android/app/debug.keystore -alias androiddebugkey -storepass android -keypass android | grep SHA1
+          echo "------------------------------------"
+
+          # 4. बाकी का काम (Flutter सेटअप)
+          cp -r lib/* .backup_lib || true
           flutter create . --overwrite --org com.vikas.pasoriya
-          
-          # 3. सेटिंग्स और SDK फिक्स
           sed -i 's/minSdkVersion 19/minSdkVersion 21/g' android/app/build.gradle
-          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle
-          
-          # 4. कोडिंग वापस डालना
-          rm -rf lib/
-          mv b lib/
-          mv google-services.json android/app/
-          
-          # 5. पैकेज जोड़ना
           flutter pub add firebase_core cloud_firestore
           flutter pub get
-          
-          # 6. SHA-1 चाबी निकालना (इसे ध्यान से देखना)
-          keytool -list -v -keystore android/app/debug.keystore -alias androiddebugkey -storepass android -keypass android
-          
-          # 7. फाइनल APK बनाना
           flutter build apk --release
 
       - name: Final Result
