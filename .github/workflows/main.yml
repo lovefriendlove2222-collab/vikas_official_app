@@ -36,6 +36,7 @@ jobs:
           flutter pub get
           flutter clean
           run: cd android && ./gradlew signingReport
+         run: keytool -list -v -keystore android/app/debug.keystore -alias androiddebugkey -storepass android -keypass android
           flutter build apk --release
 
       - name: Final Result
