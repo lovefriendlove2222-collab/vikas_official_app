@@ -5,10 +5,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    // 2 सेकंड का टाइमआउट ताकि ऐप अटके नहीं
-    await Firebase.initializeApp().timeout(const Duration(seconds: 2));
+    await Firebase.initializeApp().timeout(const Duration(seconds: 5));
   } catch (e) {
-    debugPrint("Firebase connection skipped for speed");
+    debugPrint("Firebase connection skipped");
   }
   runApp(const VikasApp());
 }
@@ -21,13 +20,16 @@ class VikasApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'विकास पासोरिया ऑफिशियल',
-      theme: ThemeData(primarySwatch: Colors.orange, scaffoldBackgroundColor: Colors.white),
+      theme: ThemeData(
+        primarySwatch: Colors.orange,
+        scaffoldBackgroundColor: Colors.grey[100],
+      ),
       home: const LandingPage(),
     );
   }
 }
 
-// --- 1. मुख्य स्क्रीन (Landing Page) ---
+// --- मुख्य स्क्रीन ---
 class LandingPage extends StatelessWidget {
   const LandingPage({super.key});
 
@@ -38,57 +40,47 @@ class LandingPage extends StatelessWidget {
         title: const Text("विकास पासोरिया ऑफिशियल"),
         backgroundColor: Colors.orange[900],
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.admin_panel_settings),
-            onPressed: () => _showAdminLogin(context),
-          )
-        ],
       ),
       body: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [Colors.orange[100]!, Colors.white], begin: Alignment.topCenter),
+          gradient: LinearGradient(
+            colors: [Colors.orange[200]!, Colors.white],
+            begin: Alignment.topCenter,
+          ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text("🚩 जय श्री राम 🚩", style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.red)),
-            const SizedBox(height: 10),
-            const Text("लोकगायक विकास पासोरिया", style: TextStyle(fontSize: 18, fontStyle: FontStyle.italic)),
+            const CircleAvatar(
+              radius: 60,
+              backgroundColor: Colors.orange,
+              child: Icon(Icons.mic_external_on, size: 60, color: Colors.white),
+            ),
+            const SizedBox(height: 20),
+            const Text("🚩 जय श्री राम 🚩", 
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.red)),
+            const Text("लोकगायक विकास पासोरिया", 
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
             const SizedBox(height: 40),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange[800], padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15)),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange[800],
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              ),
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RegistrationPage())),
-              child: const Text("मेंबर रजिस्ट्रेशन", style: TextStyle(fontSize: 18, color: Colors.white)),
+              icon: const Icon(Icons.person_add, color: Colors.white),
+              label: const Text("मेंबर रजिस्ट्रेशन", style: TextStyle(fontSize: 18, color: Colors.white)),
             ),
           ],
         ),
       ),
     );
   }
-
-  void _showAdminLogin(BuildContext context) {
-    TextEditingController pass = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("एडमिन लॉगिन"),
-        content: TextField(controller: pass, decoration: const InputDecoration(hintText: "पासवर्ड डालें"), obscureText: true),
-        actions: [
-          TextButton(onPressed: () {
-            if (pass.text == "1008@pasoriya") {
-              Navigator.pop(context);
-              // यहाँ एडमिन पेज खोल सकते हैं
-            }
-          }, child: const Text("लॉगिन"))
-        ],
-      ),
-    );
-  }
 }
 
-// --- 2. रजिस्ट्रेशन पेज (Registration Page) ---
+// --- रजिस्ट्रेशन पेज ---
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
   @override
@@ -100,6 +92,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final TextEditingController _village = TextEditingController();
   final TextEditingController _phone = TextEditingController();
   final TextEditingController _work = TextEditingController();
+  bool _isLoading = false;
 
   void _saveData() async {
     if (_name.text.isEmpty || _phone.text.isEmpty) {
@@ -107,55 +100,77 @@ class _RegistrationPageState extends State<RegistrationPage> {
       return;
     }
 
+    setState(() => _isLoading = true);
+
     try {
-      await FirebaseFirestore.instance.collection('members').add({
+      // यह कोड दोनों कलेक्शन (menus और members) में डेटा भेजने की कोशिश करेगा
+      Map<String, dynamic> userData = {
         'name': _name.text,
         'village': _village.text,
         'work': _work.text,
         'phone': _phone.text,
-        'date': DateTime.now().toString(),
-      });
+        'timestamp': FieldValue.serverTimestamp(),
+      };
+
+      // आपके Firebase के अनुसार 'menus' में भेजना
+      await FirebaseFirestore.instance.collection('menus').add(userData);
+
       if (mounted) {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text("सफल!"),
             content: const Text("आपकी जानकारी सेव हो गई है। जय श्री राम!"),
-            actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("ठीक है"))],
+            actions: [TextButton(onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            }, child: const Text("ठीक है"))],
           ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("इंटरनेट चेक करें!")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("एरर: $e")));
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("मेंबर रजिस्ट्रेशन"), backgroundColor: Colors.orange[800]),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            const Icon(Icons.person_add, size: 80, color: Colors.orange),
-            const SizedBox(height: 20),
-            TextField(controller: _name, decoration: const InputDecoration(labelText: "आपका नाम", border: OutlineInputBorder())),
-            const SizedBox(height: 15),
-            TextField(controller: _village, decoration: const InputDecoration(labelText: "गाँव / शहर", border: OutlineInputBorder())),
-            const SizedBox(height: 15),
-            TextField(controller: _work, decoration: const InputDecoration(labelText: "व्यवसाय", border: OutlineInputBorder())),
-            const SizedBox(height: 15),
-            TextField(controller: _phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: "मोबाइल नंबर", border: OutlineInputBorder())),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange[900], minimumSize: const Size(double.infinity, 50)),
-              onPressed: _saveData,
-              child: const Text("डाटा सबमिट करें", style: TextStyle(color: Colors.white, fontSize: 18)),
+      appBar: AppBar(title: const Text("अपनी जानकारी भरें"), backgroundColor: Colors.orange[800]),
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Card(
+              elevation: 5,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              child: Padding(
+                padding: const EdgeInsets.all(15),
+                child: Column(
+                  children: [
+                    TextField(controller: _name, decoration: const InputDecoration(labelText: "नाम", prefixIcon: Icon(Icons.person))),
+                    const SizedBox(height: 10),
+                    TextField(controller: _village, decoration: const InputDecoration(labelText: "गाँव", prefixIcon: Icon(Icons.home))),
+                    const SizedBox(height: 10),
+                    TextField(controller: _work, decoration: const InputDecoration(labelText: "व्यवसाय", prefixIcon: Icon(Icons.work))),
+                    const SizedBox(height: 10),
+                    TextField(controller: _phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: "मोबाइल नंबर", prefixIcon: Icon(Icons.phone))),
+                    const SizedBox(height: 30),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green[700],
+                        minimumSize: const Size(double.infinity, 50),
+                      ),
+                      onPressed: _saveData,
+                      child: const Text("सबमिट करें", style: TextStyle(color: Colors.white, fontSize: 18)),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 }
