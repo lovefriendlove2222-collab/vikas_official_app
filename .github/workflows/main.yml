@@ -1,154 +1,43 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+name: Build APK
+on: [push]
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  runApp(VikasApp());
-}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-class VikasApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Vikas Pasoria Official',
-      theme: ThemeData(primarySwatch: Colors.orange, scaffoldBackgroundColor: Colors.white),
-      home: LoginScreen(),
-    );
-  }
-}
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.10.0'
 
-// --- लॉगिन स्क्रीन ---
-class LoginScreen extends StatefulWidget {
-  @override
-  _LoginScreenState createState() => _LoginScreenState();
-}
+      - name: Build Project
+        run: |
+          # 1. बैकअप और फाइल सेटअप
+          mkdir -p backup_data
+          cp -r lib/* backup_data/
+          cp android/app/google-services.json . 
+          
+          # 2. प्रोजेक्ट ढांचा तैयार करना
+          flutter create . --overwrite --org com.vikas.pasoria
+          
+          # 3. फाइलें वापस सेट करना
+          rm -rf lib/
+          mv backup_data lib/
+          mv google-services.json android/app/
+          
+          # 4. जरूरी सेटिंग्स
+          sed -i 's/minSdkVersion 19/minSdkVersion 21/g' android/app/build.gradle
+          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle
+          
+          # 5. पैकेज जोड़ना और बिल्ड करना
+          flutter pub add cloud_firestore firebase_core
+          flutter pub get
+          flutter build apk --release
 
-class _LoginScreenState extends State<LoginScreen> {
-  final phoneController = TextEditingController();
-
-  void login() async {
-    String phone = phoneController.text.trim();
-    if (phone.isEmpty || phone.length < 10) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("सही मोबाइल नंबर भरें")));
-      return;
-    }
-
-    var db = FirebaseFirestore.instance;
-    var doc = await db.collection("users").doc(phone).get();
-
-    if (!doc.exists) {
-      await db.collection("users").doc(phone).set({
-        "mobile": phone,
-        "approved": false,
-        "created_at": FieldValue.serverTimestamp(),
-      });
-      showDialog(context: context, builder: (c) => AlertDialog(title: Text("पंजीकरण सफल"), content: Text("विकास भाई आपकी आईडी चेक करके मंजूर करेंगे। कृपया थोड़ा इंतज़ार करें।")));
-    } else {
-      if (doc['approved'] == true) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomeScreen(phone)));
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("आपकी आईडी अभी मंजूर नहीं हुई है।")));
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: EdgeInsets.all(30),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text("विकास पासोरिया", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.orange)),
-              SizedBox(height: 10),
-              Text("ऑफिशियल ऐप लॉगिन", style: TextStyle(color: Colors.grey)),
-              SizedBox(height: 40),
-              TextField(controller: phoneController, decoration: InputDecoration(border: OutlineInputBorder(), labelText: "मोबाइल नंबर"), keyboardType: TextInputType.phone),
-              SizedBox(height: 20),
-              SizedBox(width: double.infinity, height: 50, child: ElevatedButton(onPressed: login, child: Text("लॉगिन / रजिस्टर")))
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// --- होम स्क्रीन ---
-class HomeScreen extends StatelessWidget {
-  final String userId;
-  HomeScreen(this.userId);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      app_bar: AppBar(title: Text("विकास पासोरिया - सेवा पोर्टल")),
-      body: StreamBuilder(
-        stream: FirebaseFirestore.instance.collection('menus').snapshots(),
-        builder: (context, AsyncSnapshot<QuerySnapshot> snap) {
-          if (!snap.hasData) return Center(child: CircularProgressIndicator());
-          return GridView.count(
-            crossAxisCount: 2, padding: EdgeInsets.all(10),
-            children: snap.data!.docs.map((m) {
-              return Card(
-                elevation: 4,
-                child: InkWell(
-                  onTap: () {
-                    if (m['type'] == "donation") {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => DonationScreen(userId)));
-                    }
-                  },
-                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(Icons.star, color: Colors.orange, size: 40),
-                    SizedBox(height: 10),
-                    Text(m['title'], textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
-                  ]),
-                ),
-              );
-            }).toList(),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// --- डोनेशन/पेमेंट स्क्रीन ---
-class DonationScreen extends StatelessWidget {
-  final String userId;
-  DonationScreen(this.userId);
-  final amountController = TextEditingController();
-
-  void donate(context) async {
-    if (amountController.text.isEmpty) return;
-    await FirebaseFirestore.instance.collection('donations').add({
-      "user_id": userId,
-      "amount": amountController.text,
-      "status": "pending",
-      "timestamp": FieldValue.serverTimestamp(),
-    });
-    showDialog(context: context, builder: (c) => AlertDialog(title: Text("रिक्वेस्ट भेजी गई"), content: Text("आपका भुगतान पेंडिंग है। विकास भाई इसे चेक करेंगे।")));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      app_bar: AppBar(title: Text("दान / सेवा राशि")),
-      body: Padding(
-        padding: EdgeInsets.all(20),
-        child: Column(
-          children: [
-            TextField(controller: amountController, decoration: InputDecoration(labelText: "राशि भरें (₹)"), keyboardType: TextInputType.number),
-            SizedBox(height: 20),
-            ElevatedButton(onPressed: () => donate(context), child: Text("पेमेंट रिक्वेस्ट भेजें"))
-          ],
-        ),
-      ),
-    );
-  }
-}
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vikas_App_Final
+          path: build/app/outputs/flutter-apk/app-release.apk
