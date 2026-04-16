@@ -1,12 +1,17 @@
-include ':app'
-def flutterProjectRoot = rootProject.projectDir.parentFile
-def pluginsFile = new File(flutterProjectRoot, '.flutter-plugins')
-if (pluginsFile.exists()) {
-    pluginsFile.eachLine { line ->
-        def plugin = line.split('=')
-        if (plugin.length == 2) {
-            include ":${plugin[0]}"
-            project(":${plugin[0]}").projectDir = new File(plugin[1])
-        }
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:7.3.0'
+        classpath 'com.google.gms:google-services:4.3.15'
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
     }
 }
