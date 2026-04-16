@@ -14,23 +14,28 @@ jobs:
 
       - name: Build Project
         run: |
-          # अपनी असली कोडिंग को पहले कहीं छुपा कर रख लो
-          mkdir -p backup_lib
-          cp -r lib/* backup_lib/
+          # 1. अपनी असली कोडिंग और गूगल की चाबी (JSON) का बैकअप लो
+          mkdir -p backup_data
+          cp -r lib/* backup_data/
+          cp android/app/google-services.json . 
           
-          # नया प्रोजेक्ट बनाओ (ये फाइलों को मिटाता है)
+          # 2. नया और साफ़ प्रोजेक्ट ढांचा बनाओ
           flutter create . --overwrite --org com.vikas.pasoria
           
-          # अब अपनी असली कोडिंग वापस डाल दो
+          # 3. बैकअप से फाइलें वापस उनकी सही जगह डालो
           rm -rf lib/
-          mv backup_lib lib/
+          mv backup_data lib/
+          mv google-services.json android/app/
           
-          # वर्जन 21 सेट करो
+          # 4. मोबाइल वर्जन सेटिंग्स (ताकि एरर न आए)
           sed -i 's/minSdkVersion 19/minSdkVersion 21/g' android/app/build.gradle
           sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle
           
+          # 5. फायरबेस और क्लाउड डेटाबेस को जोड़ो
           flutter pub add cloud_firestore firebase_core
           flutter pub get
+          
+          # 6. अब बनाओ असली वाला धमाका APK
           flutter build apk --release
 
       - name: Upload APK
