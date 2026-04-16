@@ -1,26 +1,20 @@
 name: Build APK
 on: [push]
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      # यहाँ हम रोबोट को खुद सारा सामान (Android folders) बनाने को कह रहे हैं
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.10.0'
-          
       - run: |
           flutter create . --overwrite --org com.vikas.pasoria
-          # आपकी पुरानी फाइलें वापस उनकी जगह पर डाल रहे हैं
-          cp android/app/google-services.json . || true 
-          flutter pub get
+          cp android/app/google-services.json . || true
+          flutter pub add cloud_firestore firebase_core
           flutter build apk --release
-          
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: vikas-app-final
+          name: Vikas_App_Final
           path: build/app/outputs/flutter-apk/app-release.apk
