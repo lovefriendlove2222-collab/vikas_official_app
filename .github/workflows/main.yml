@@ -20,7 +20,7 @@ jobs:
           cp android/app/google-services.json . 
           
           # 2. प्रोजेक्ट ढांचा तैयार करना
-          flutter create . --overwrite --org com.vikas.pasoria
+          flutter create . --overwrite --org com.vikas.pasoriya
           
           # 3. फाइलें वापस सेट करना
           rm -rf lib/
