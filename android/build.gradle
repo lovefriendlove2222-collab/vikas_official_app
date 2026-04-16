@@ -1,3 +1,4 @@
+def flutterRoot = sun.misc.VM.getSavedProperty("flutter.sdk") 
 buildscript {
     repositories {
         google()
