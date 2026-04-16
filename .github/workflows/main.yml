@@ -1,9 +1,35 @@
-      - run: |
+name: Build APK
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.10.0'
+
+      - name: Build Project
+        run: |
           # नया प्रोजेक्ट ढांचा बनाओ
           flutter create . --overwrite --org com.vikas.pasoria
-          # अब minSdkVersion को 21 करो
+          
+          # वर्जन 21 सेट करो ताकि एरर न आए
           sed -i 's/minSdkVersion 19/minSdkVersion 21/g' android/app/build.gradle
           sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle
-          # पक्का करो कि आपकी lib फाइलें ही इस्तेमाल हों
+          
+          # फायरबेस जोड़ो
+          flutter pub add cloud_firestore firebase_core
           flutter pub get
+          
+          # अब असली APK बनाओ
           flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vikas_App_Final
+          path: build/app/outputs/flutter-apk/app-release.apk
