@@ -3,14 +3,16 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() async {
+  // 1. ऐप को बाइंड करना (जरूरी है)
   WidgetsFlutterBinding.ensureInitialized();
+  
   try {
-    // Firebase को स्टार्ट करने का सबसे बेसिक तरीका
+    // 2. Firebase को लोड करना
     await Firebase.initializeApp();
     runApp(VikasApp());
   } catch (e) {
-    // अगर कोई बड़ी गलती हुई, तो स्क्रीन पर लिख देगा
-    runApp(MaterialApp(home: Scaffold(body: Center(child: Text("Firebase Error: $e")))));
+    // अगर फिर भी कोई एरर आए तो यहाँ दिखेगा
+    runApp(MaterialApp(home: Scaffold(body: Center(child: Text("Firebase लोड नहीं हुआ: $e")))));
   }
 }
 
@@ -20,39 +22,28 @@ class VikasApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        appBar: AppBar(title: Text("Vikas Pasoriya Official"), backgroundColor: Colors.orange),
+        appBar: AppBar(
+          title: Text("Vikas Pasoriya Official"),
+          backgroundColor: Colors.orange,
+        ),
         body: StreamBuilder(
-          // 'services' की जगह 'test' कलेक्शन से चेक करते हैं
+          // पक्का करें कि Firebase में 'services' नाम का फोल्डर है
           stream: FirebaseFirestore.instance.collection('services').snapshots(),
           builder: (context, AsyncSnapshot<QuerySnapshot> snap) {
-            // 1. अगर कनेक्शन में लोचा है
-            if (snap.connectionState == ConnectionState.waiting) {
-              return Center(child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 20),
-                  Text("डेटाबेस से जुड़ रहा हूँ... कृपया नेट चेक करें"),
-                ],
-              ));
-            }
-
-            // 2. अगर कोई एरर आ जाए
-            if (snap.hasError) {
-              return Center(child: Text("Error: ${snap.error}"));
-            }
-
-            // 3. अगर डेटाबेस में कुछ नहीं मिला
+            if (snap.hasError) return Center(child: Text("डेटाबेस एरर: ${snap.error}"));
+            if (snap.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator());
+            
             if (!snap.hasData || snap.data!.docs.isEmpty) {
-              return Center(child: Text("डेटाबेस में कोई 'services' फोल्डर नहीं मिला!"));
+              return Center(child: Text("डेटाबेस में कोई सर्विस नहीं मिली!"));
             }
 
-            // 4. अगर सब सही है, तो लिस्ट दिखाओ
             return ListView(
-              children: snap.data!.docs.map((d) => ListTile(
-                title: Text(d['title'] ?? "No Title"),
-                leading: Icon(Icons.star, color: Colors.orange),
-              )).toList(),
+              children: snap.data!.docs.map((doc) {
+                return ListTile(
+                  leading: Icon(Icons.star, color: Colors.orange),
+                  title: Text(doc['title'] ?? "No Title"),
+                );
+              }).toList(),
             );
           },
         ),
