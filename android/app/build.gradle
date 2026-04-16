@@ -1,10 +1,16 @@
+def flutterRoot = sun.misc.VM.getSavedProperty("flutter.sdk")
+
 apply plugin: 'com.android.application'
-apply plugin: 'com.google.gms.google-services' // इसे जोड़ना जरूरी है
+apply plugin: 'com.google.gms.google-services'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
-    namespace "com.vikas.pasoria" // अपनी ऐप की आईडी यहाँ चेक करें
+    namespace "com.vikas.pasoria"
     compileSdkVersion 33
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
 
     defaultConfig {
         applicationId "com.vikas.pasoria"
@@ -12,5 +18,25 @@ android {
         targetSdkVersion 33
         versionCode 1
         versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.debug
+            shrinkResources false
+            minifyEnabled false
+        }
+    }
+}
+
+flutter {
+    source '../..'
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation platform('com.google.firebase:firebase-bom:32.2.0')
+    implementation 'com.google.firebase:firebase-analytics'
 }
