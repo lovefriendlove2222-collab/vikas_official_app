@@ -10,8 +10,7 @@ android {
 
     defaultConfig {
         applicationId "com.vikas.pasoria"
-        // विकास भाई, यहाँ हमने 19 की जगह 21 कर दिया है ताकि एरर न आए
-        minSdkVersion 21 
+         minSdkVersion 21 
         targetSdkVersion 33
         versionCode 1
         versionName "1.0"
