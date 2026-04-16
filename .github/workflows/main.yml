@@ -34,6 +34,16 @@ jobs:
           flutter pub get
           
           # 6. फाइनल APK बनाना
+                - name: Force Show SHA Keys
+        run: |
+          # चाबी बनाना और SHA-256 दिखाना
+          mkdir -p android/app
+          keytool -genkey -v -keystore android/app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Vikas, OU=Dev, O=Vikas, L=Sonipat, S=Haryana, C=IN" || true
+          
+          echo "------ आपकी SHA-256 यहाँ है ------"
+          keytool -list -v -keystore android/app/debug.keystore -alias androiddebugkey -storepass android -keypass android | grep SHA256
+          echo "------------------------------------"
+
           flutter build apk --release
 
       - name: Final Result
