@@ -1,18 +1,29 @@
 name: Build APK
 on: [push]
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.10.0'
+          
       - run: |
+          # पहले नया प्रोजेक्ट ढांचा बनाओ
           flutter create . --overwrite --org com.vikas.pasoria
-          cp android/app/google-services.json . || true
-          flutter pub add cloud_firestore firebase_core
+          
+          # अब रोबोट को मजबूर करो कि वो 19 की जगह 21 इस्तेमाल करे
+          sed -i 's/minSdkVersion 19/minSdkVersion 21/g' android/app/build.gradle
+          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle
+          
+          # आपकी फाइलें वापस डालो
+          cp android/app/google-services.json . || true 
+          flutter pub get
           flutter build apk --release
+          
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
