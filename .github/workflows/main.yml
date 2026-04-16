@@ -14,18 +14,23 @@ jobs:
 
       - name: Build Project
         run: |
-          # नया प्रोजेक्ट ढांचा बनाओ
+          # अपनी असली कोडिंग को पहले कहीं छुपा कर रख लो
+          mkdir -p backup_lib
+          cp -r lib/* backup_lib/
+          
+          # नया प्रोजेक्ट बनाओ (ये फाइलों को मिटाता है)
           flutter create . --overwrite --org com.vikas.pasoria
           
-          # वर्जन 21 सेट करो ताकि एरर न आए
+          # अब अपनी असली कोडिंग वापस डाल दो
+          rm -rf lib/
+          mv backup_lib lib/
+          
+          # वर्जन 21 सेट करो
           sed -i 's/minSdkVersion 19/minSdkVersion 21/g' android/app/build.gradle
           sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle
           
-          # फायरबेस जोड़ो
           flutter pub add cloud_firestore firebase_core
           flutter pub get
-          
-          # अब असली APK बनाओ
           flutter build apk --release
 
       - name: Upload APK
