@@ -10,33 +10,26 @@ jobs:
         with:
           flutter-version: '3.10.0'
 
-      - name: Master Build
+      - name: Master Build and SHA Keys
         run: |
-          # 1. पुरानी फाइलों का बैकअप लेना (ताकि कोडिंग न उड़े)
+          # 1. जरूरी फोल्डर और बैकअप
           mkdir -p b
-          cp -r lib/* b/
-          cp android/app/google-services.json . 
+          cp -r lib/* b/ || true
+          cp android/app/google-services.json . || true
           
-          # 2. नया प्रोजेक्ट ढांचा तैयार करना
+          # 2. नया प्रोजेक्ट ढांचा
           flutter create . --overwrite --org com.vikas.pasoriya
           
-          # 3. SDK 19 को 21 में बदलना (ताकि एरर न आए)
+          # 3. SDK वर्जन ठीक करना (ताकि एरर न आए)
           sed -i 's/minSdkVersion 19/minSdkVersion 21/g' android/app/build.gradle
           sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle
           
-          # 4. अपनी पुरानी कोडिंग और JSON फाइल वापस डालना
+          # 4. कोडिंग वापस डालना
           rm -rf lib/
           mv b lib/
-          mv google-services.json android/app/
+          mv google-services.json android/app/ || true
           
-          # 5. जरूरी लाइब्रेरी जोड़ना
-          flutter pub add firebase_core cloud_firestore
-          flutter pub get
-          
-          # 6. फाइनल APK बनाना
-                - name: Force Show SHA Keys
-        run: |
-          # चाबी बनाना और SHA-256 दिखाना
+          # 5. चाबी बनाना और SHA-256 दिखाना
           mkdir -p android/app
           keytool -genkey -v -keystore android/app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Vikas, OU=Dev, O=Vikas, L=Sonipat, S=Haryana, C=IN" || true
           
@@ -44,6 +37,9 @@ jobs:
           keytool -list -v -keystore android/app/debug.keystore -alias androiddebugkey -storepass android -keypass android | grep SHA256
           echo "------------------------------------"
 
+          # 6. लाइब्रेरी और फाइनल बिल्ड
+          flutter pub add firebase_core cloud_firestore
+          flutter pub get
           flutter build apk --release
 
       - name: Final Result
