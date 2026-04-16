@@ -1,0 +1,16 @@
+apply plugin: 'com.android.application'
+apply plugin: 'com.google.gms.google-services' // इसे जोड़ना जरूरी है
+apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+
+android {
+    namespace "com.vikas.pasoria" // अपनी ऐप की आईडी यहाँ चेक करें
+    compileSdkVersion 33
+
+    defaultConfig {
+        applicationId "com.vikas.pasoria"
+        minSdkVersion 21
+        targetSdkVersion 33
+        versionCode 1
+        versionName "1.0"
+    }
+}
