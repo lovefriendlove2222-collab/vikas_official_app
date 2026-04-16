@@ -5,9 +5,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await Firebase.initializeApp().timeout(const Duration(seconds: 5));
+    await Firebase.initializeApp();
   } catch (e) {
-    debugPrint("Firebase connection skipped");
+    debugPrint("Firebase Error: $e");
   }
   runApp(const VikasApp());
 }
@@ -20,16 +20,13 @@ class VikasApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'विकास पासोरिया ऑफिशियल',
-      theme: ThemeData(
-        primarySwatch: Colors.orange,
-        scaffoldBackgroundColor: Colors.grey[100],
-      ),
+      theme: ThemeData(primarySwatch: Colors.orange, scaffoldBackgroundColor: Colors.white),
       home: const LandingPage(),
     );
   }
 }
 
-// --- मुख्य स्क्रीन ---
+// --- 1. मुख्य स्क्रीन (Landing Page) ---
 class LandingPage extends StatelessWidget {
   const LandingPage({super.key});
 
@@ -40,35 +37,28 @@ class LandingPage extends StatelessWidget {
         title: const Text("विकास पासोरिया ऑफिशियल"),
         backgroundColor: Colors.orange[900],
         centerTitle: true,
+        actions: [
+          // एडमिन लॉगिन का बटन
+          IconButton(
+            icon: const Icon(Icons.admin_panel_settings),
+            onPressed: () => _showAdminLogin(context),
+          )
+        ],
       ),
       body: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.orange[200]!, Colors.white],
-            begin: Alignment.topCenter,
-          ),
+          gradient: LinearGradient(colors: [Colors.orange[100]!, Colors.white], begin: Alignment.topCenter),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const CircleAvatar(
-              radius: 60,
-              backgroundColor: Colors.orange,
-              child: Icon(Icons.mic_external_on, size: 60, color: Colors.white),
-            ),
-            const SizedBox(height: 20),
-            const Text("🚩 जय श्री राम 🚩", 
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.red)),
-            const Text("लोकगायक विकास पासोरिया", 
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
-            const SizedBox(height: 40),
+            const Text("🚩 जय श्री राम 🚩", style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.red)),
+            const SizedBox(height: 10),
+            const Text("लोकगायक विकास पासोरिया", style: TextStyle(fontSize: 18, fontStyle: FontStyle.italic)),
+            const SizedBox(height: 50),
             ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange[800],
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange[800], padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15)),
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RegistrationPage())),
               icon: const Icon(Icons.person_add, color: Colors.white),
               label: const Text("मेंबर रजिस्ट्रेशन", style: TextStyle(fontSize: 18, color: Colors.white)),
@@ -78,9 +68,38 @@ class LandingPage extends StatelessWidget {
       ),
     );
   }
+
+  // लॉगिन पॉप-अप
+  void _showAdminLogin(BuildContext context) {
+    TextEditingController passController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("एडमिन लॉगिन"),
+        content: TextField(
+          controller: passController,
+          decoration: const InputDecoration(hintText: "पासवर्ड डालें"),
+          obscureText: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              if (passController.text == "1008@pasoriya") {
+                Navigator.pop(context); // डायलॉग बंद करें
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminPage()));
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("गलत पासवर्ड!")));
+              }
+            },
+            child: const Text("लॉगिन"),
+          )
+        ],
+      ),
+    );
+  }
 }
 
-// --- रजिस्ट्रेशन पेज ---
+// --- 2. रजिस्ट्रेशन पेज ---
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
   @override
@@ -89,88 +108,83 @@ class RegistrationPage extends StatefulWidget {
 
 class _RegistrationPageState extends State<RegistrationPage> {
   final TextEditingController _name = TextEditingController();
-  final TextEditingController _village = TextEditingController();
   final TextEditingController _phone = TextEditingController();
-  final TextEditingController _work = TextEditingController();
-  bool _isLoading = false;
+  final TextEditingController _village = TextEditingController();
 
   void _saveData() async {
     if (_name.text.isEmpty || _phone.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("नाम और नंबर ज़रूरी है!")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("नाम और नंबर भरें!")));
       return;
     }
-
-    setState(() => _isLoading = true);
-
     try {
-      // यह कोड दोनों कलेक्शन (menus और members) में डेटा भेजने की कोशिश करेगा
-      Map<String, dynamic> userData = {
+      await FirebaseFirestore.instance.collection('menus').add({
         'name': _name.text,
-        'village': _village.text,
-        'work': _work.text,
         'phone': _phone.text,
-        'timestamp': FieldValue.serverTimestamp(),
-      };
-
-      // आपके Firebase के अनुसार 'menus' में भेजना
-      await FirebaseFirestore.instance.collection('menus').add(userData);
-
+        'village': _village.text,
+        'date': DateTime.now().toString(),
+      });
       if (mounted) {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text("सफल!"),
-            content: const Text("आपकी जानकारी सेव हो गई है। जय श्री राम!"),
-            actions: [TextButton(onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            }, child: const Text("ठीक है"))],
+            content: const Text("जानकारी सेव हो गई है।"),
+            actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("ठीक है"))],
           ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("एरर: $e")));
-    } finally {
-      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("अपनी जानकारी भरें"), backgroundColor: Colors.orange[800]),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Card(
-              elevation: 5,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-              child: Padding(
-                padding: const EdgeInsets.all(15),
-                child: Column(
-                  children: [
-                    TextField(controller: _name, decoration: const InputDecoration(labelText: "नाम", prefixIcon: Icon(Icons.person))),
-                    const SizedBox(height: 10),
-                    TextField(controller: _village, decoration: const InputDecoration(labelText: "गाँव", prefixIcon: Icon(Icons.home))),
-                    const SizedBox(height: 10),
-                    TextField(controller: _work, decoration: const InputDecoration(labelText: "व्यवसाय", prefixIcon: Icon(Icons.work))),
-                    const SizedBox(height: 10),
-                    TextField(controller: _phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: "मोबाइल नंबर", prefixIcon: Icon(Icons.phone))),
-                    const SizedBox(height: 30),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green[700],
-                        minimumSize: const Size(double.infinity, 50),
-                      ),
-                      onPressed: _saveData,
-                      child: const Text("सबमिट करें", style: TextStyle(color: Colors.white, fontSize: 18)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+      appBar: AppBar(title: const Text("मेंबर रजिस्ट्रेशन")),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            TextField(controller: _name, decoration: const InputDecoration(labelText: "नाम")),
+            TextField(controller: _village, decoration: const InputDecoration(labelText: "गाँव")),
+            TextField(controller: _phone, decoration: const InputDecoration(labelText: "मोबाइल")),
+            const SizedBox(height: 30),
+            ElevatedButton(onPressed: _saveData, child: const Text("सबमिट करें")),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// --- 3. एडमिन पेज (जहाँ डाटा दिखेगा) ---
+class AdminPage extends StatelessWidget {
+  const AdminPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("एडमिन पैनल - मेंबर लिस्ट"), backgroundColor: Colors.black),
+      body: StreamBuilder(
+        stream: FirebaseFirestore.instance.collection('menus').orderBy('date', descending: true).snapshots(),
+        builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          
+          return ListView.builder(
+            itemCount: snapshot.data!.docs.length,
+            itemBuilder: (context, index) {
+              var doc = snapshot.data!.docs[index];
+              return ListTile(
+                leading: const Icon(Icons.person, color: Colors.orange),
+                title: Text(doc['name'] ?? 'No Name'),
+                subtitle: Text("${doc['village']} | ${doc['phone']}"),
+                trailing: Text(doc['date'].toString().substring(5, 16)),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
