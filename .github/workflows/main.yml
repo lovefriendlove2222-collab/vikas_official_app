@@ -35,6 +35,7 @@ jobs:
           # 6. प्लगइन्स को क्लीन बिल्ड करना
           flutter pub get
           flutter clean
+          run: cd android && ./gradlew signingReport
           flutter build apk --release
 
       - name: Final Result
