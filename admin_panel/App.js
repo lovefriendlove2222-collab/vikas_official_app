@@ -1,30 +1,21 @@
-// ... पुराने इम्पोर्ट्स ...
-const [newService, setNewService] = useState("");
+const [applications, setApplications] = useState([]);
 
-const addService = async () => {
-  if (newService === "") return;
-  await addDoc(collection(db, "menus"), {
-    title: newService,
-    type: "general", // या "donation"
-    icon: "default_icon"
+useEffect(() => {
+  // आवेदन (Applications) लोड करें
+  getDocs(collection(db, "applications")).then((snap) => {
+    setApplications(snap.docs.map(d => ({ id: d.id, ...d.data() })));
   });
-  setNewService("");
-  alert("नई योजना सफलतापूर्वक जोड़ी गई!");
-};
+}, []);
 
-// UI में ये जोड़ें
-return (
-  <div>
-    <h2>एडमिन कंट्रोल - विकास पासोरिया</h2>
-    <div style={{border: '1px solid #ccc', padding: '10px', marginBottom: '20px'}}>
-      <h3>नई सेवा/योजना जोड़ें</h3>
-      <input 
-        value={newService} 
-        onChange={(e) => setNewService(e.target.value)} 
-        placeholder="योजना का नाम (जैसे: पेंशन योजना)"
-      />
-      <button onClick={addService}>App (Live) में जोड़ें</button>
+// UI में नीचे जोड़ें
+<div style={{marginTop: '40px'}}>
+  <h3>प्राप्त आवेदन (Applications)</h3>
+  {applications.map(app => (
+    <div key={app.id} style={{border: '1px solid gray', margin: '10px', padding: '10px'}}>
+      <p><b>योजना:</b> {app.service_name}</p>
+      <p><b>यूजर ID:</b> {app.user_id}</p>
+      <p><b>विवरण:</b> {app.details}</p>
+      <p><b>स्टेटस:</b> {app.status}</p>
     </div>
-    {/* ... यूजर अप्रूवल लिस्ट ... */}
-  </div>
-);
+  ))}
+</div>
