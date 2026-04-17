@@ -1,40 +1,59 @@
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// ... imports ...
 
 class HomeScreen extends StatelessWidget {
+  final String userId;
+  HomeScreen(this.userId);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("विकास पासोरिया - सेवाएं"), backgroundColor: Colors.orange),
+      appBar: AppBar(title: Text("विकास पासोरिया - सेवाएं")),
       body: StreamBuilder(
+        // 'menus' कलेक्शन से डेटा लाइव आएगा
         stream: FirebaseFirestore.instance.collection('menus').snapshots(),
         builder: (context, AsyncSnapshot<QuerySnapshot> snap) {
           if (!snap.hasData) return Center(child: CircularProgressIndicator());
-          
-          return ListView(
-            children: snap.data!.docs.map((doc) {
+
+          return GridView.builder(
+            padding: EdgeInsets.all(10),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2, // 2 कॉलम में योजनाएं दिखेंगी
+              childAspectRatio: 1.0,
+            ),
+            itemCount: snap.data!.docs.length,
+            itemBuilder: (context, index) {
+              var service = snap.data!.docs[index];
               return Card(
-                margin: EdgeInsets.all(10),
-                child: ListTile(
-                  title: Text(doc['title'], style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text("क्लिक करके जानकारी देखें"),
-                  trailing: Icon(Icons.arrow_forward_ios),
+                elevation: 4,
+                child: InkWell(
                   onTap: () {
-                    // जानकारी वाली स्क्रीन पर ले जाना
-                    showDialog(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                        title: Text(doc['title']),
-                        content: Text(doc['desc'] ?? "जानकारी जल्द उपलब्ध होगी।"),
-                      ),
-                    );
+                    // यहाँ सर्विस के टाइप के हिसाब से पेज खुलेगा
+                    _navigateToService(context, service['type'], service['title']);
                   },
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.Category, size: 40, color: Colors.orange), // आप इमेज भी जोड़ सकते हैं
+                      SizedBox(height: 10),
+                      Text(service['title'], style: TextStyle(fontWeight: FontWeight.bold)),
+                    ],
+                  ),
                 ),
               );
-            }).toList(),
+            },
           );
         },
       ),
     );
+  }
+
+  void _navigateToService(context, type, title) {
+    // अगर सर्विस 'donation' है तो डोनेशन पेज, वरना जनरल फॉर्म
+    if (type == "donation") {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => DonationScreen(userId)));
+    } else {
+      // भविष्य की 100+ योजनाओं के लिए एक कॉमन फॉर्म पेज
+      Navigator.push(context, MaterialPageRoute(builder: (_) => GenericServiceForm(title)));
+    }
   }
 }
