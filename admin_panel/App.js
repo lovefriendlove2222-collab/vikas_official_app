@@ -1,32 +1,30 @@
-import { useState, useEffect } from "react";
-import { db } from "./firebase";
-import { collection, addDoc, getDocs, updateDoc, doc } from "firebase/firestore";
+// ... पुराने इम्पोर्ट्स ...
+const [newService, setNewService] = useState("");
 
-export default function App() {
-  const [serviceName, setServiceName] = useState("");
-  const [description, setDescription] = useState("");
-  const [users, setUsers] = useState([]);
+const addService = async () => {
+  if (newService === "") return;
+  await addDoc(collection(db, "menus"), {
+    title: newService,
+    type: "general", // या "donation"
+    icon: "default_icon"
+  });
+  setNewService("");
+  alert("नई योजना सफलतापूर्वक जोड़ी गई!");
+};
 
-  const addNewService = async () => {
-    if (serviceName === "") return alert("योजना का नाम लिखें!");
-    await addDoc(collection(db, "menus"), {
-      title: serviceName,
-      desc: description,
-      type: "info"
-    });
-    alert("योजना लाइव हो गई, विकास भाई!");
-    setServiceName(""); setDescription("");
-  };
-
-  return (
-    <div style={{ padding: '30px', fontFamily: 'Arial' }}>
-      <h1>विकास पासोरिया एडमिन कंट्रोल</h1>
-      <div style={{ background: '#f9f9f9', padding: '20px', borderRadius: '10px' }}>
-        <h3>नई योजना जोड़ें</h3>
-        <input value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder="योजना का नाम" style={{display:'block', marginBottom:'10px', width:'100%'}} />
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="योजना की पूरी जानकारी" style={{display:'block', marginBottom:'10px', width:'100%'}} />
-        <button onClick={addNewService} style={{ background: 'orange', padding: '10px 20px', border: 'none', cursor: 'pointer' }}>App में लाइव करें 🚀</button>
-      </div>
+// UI में ये जोड़ें
+return (
+  <div>
+    <h2>एडमिन कंट्रोल - विकास पासोरिया</h2>
+    <div style={{border: '1px solid #ccc', padding: '10px', marginBottom: '20px'}}>
+      <h3>नई सेवा/योजना जोड़ें</h3>
+      <input 
+        value={newService} 
+        onChange={(e) => setNewService(e.target.value)} 
+        placeholder="योजना का नाम (जैसे: पेंशन योजना)"
+      />
+      <button onClick={addService}>App (Live) में जोड़ें</button>
     </div>
-  );
-}
+    {/* ... यूजर अप्रूवल लिस्ट ... */}
+  </div>
+);
