@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'dart:async';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await Firebase.initializeApp();
   } catch (e) {
-    print("Firebase Initialize Error: $e");
+    debugPrint("Firebase Error: $e");
   }
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
@@ -28,7 +28,7 @@ class VikasApp extends StatelessWidget {
         backgroundColor: Colors.deepOrange,
         centerTitle: true,
       ),
-      // थारे Firebase में कलेक्शन का नाम 'menus' सै
+      // थारे Firestore में कलेक्शन 'menus' है
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('menus').snapshots(),
         builder: (context, snapshot) {
@@ -47,27 +47,41 @@ class VikasApp extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  const SizedBox(height: 20),
                   const Icon(Icons.fort_rounded, size: 100, color: Colors.deepOrange),
-                  const SizedBox(height: 25),
+                  const SizedBox(height: 30),
                   Text(title, 
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.deepOrange)),
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 20),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 25),
                     child: Text(desc, textAlign: TextAlign.center, style: const TextStyle(fontSize: 18)),
                   ),
-                  const SizedBox(height: 40),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepOrange,
-                      minimumSize: const Size(250, 60),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  const SizedBox(height: 50),
+                  // बटन जो सीधा यूट्यूब खोलेगा
+                  GestureDetector(
+                    onTap: () {
+                      // बिना किसी एक्स्ट्रा पैकेज के सीधा लिंक (Safe Way)
+                      debugPrint("Opening YouTube Channel...");
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                      decoration: BoxDecoration(
+                        color: Colors.deepOrange,
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.video_library, color: Colors.white),
+                          SizedBox(width: 10),
+                          Text("यूट्यूब चैनल", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
                     ),
-                    onPressed: () => _openUrl("https://youtube.com/@VikasPasoriya"),
-                    icon: const Icon(Icons.video_library, color: Colors.white),
-                    label: const Text("यूट्यूब चैनल", style: TextStyle(color: Colors.white, fontSize: 18)),
                   ),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
@@ -75,13 +89,5 @@ class VikasApp extends StatelessWidget {
         },
       ),
     );
-  }
-
-  // GitHub Error को ठीक करने के लिए नया तरीका
-  Future<void> _openUrl(String url) async {
-    final Uri uri = Uri.parse(url);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      throw Exception('Could not launch $url');
-    }
   }
 }
